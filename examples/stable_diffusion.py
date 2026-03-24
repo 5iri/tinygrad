@@ -1,5 +1,6 @@
 # https://arxiv.org/pdf/2112.10752.pdf
 # https://github.com/ekagra-ranjan/huggingface-blog/blob/main/stable_diffusion.md
+import sys
 import tempfile
 from pathlib import Path
 import argparse, time
@@ -7,6 +8,10 @@ from collections import namedtuple
 from typing import Dict, Any
 
 import numpy as np
+
+# Prefer the local checkout when the script is run directly via `python examples/stable_diffusion.py`.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from tinygrad import Device, GlobalCounters, dtypes, Tensor, TinyJit
 from tinygrad.helpers import Timing, Context, getenv, fetch, colored, tqdm, flatten, profile_marker
 from tinygrad.nn import Conv2d, GroupNorm
@@ -16,6 +21,13 @@ from extra.models import unet, clip
 from extra.models.unet import UNetModel
 from examples.mlperf.initializers import AutocastLinear, AutocastConv2d, AutocastGroupNorm, AutocastLayerNorm, zero_module, attn_f32_softmax, gelu_erf
 from extra.bench_log import BenchEvent, WallTimeEvent
+
+def realize_grouped_by_shape(*tensors: Tensor) -> None:
+  buckets: dict[tuple[tuple[int, ...], Any, Any], list[Tensor]] = {}
+  for t in tensors:
+    buckets.setdefault((t.shape, t.dtype, t.device), []).append(t)
+  for bucket in buckets.values():
+    Tensor.realize(*bucket)
 
 class AttnBlock:
   def __init__(self, in_channels):
@@ -281,7 +293,7 @@ if __name__ == "__main__":
         if k.startswith("model"):
           v.replace(v.cast(dtypes.float16))
 
-    Tensor.realize(*get_state_dict(model).values())
+    realize_grouped_by_shape(*get_state_dict(model).values())
 
   profile_marker("run clip (conditional)")
   tokenizer = Tokenizer.ClipTokenizer()

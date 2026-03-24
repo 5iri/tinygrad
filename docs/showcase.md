@@ -36,7 +36,7 @@ SMALL=1 python3 examples/whisper.py
 ### Stable Diffusion
 
 ```sh
-python3 examples/stable_diffusion.py
+PYTHONPATH=. python3 examples/stable_diffusion.py
 ```
 
 ![a horse sized cat eating a bagel](https://github.com/tinygrad/tinygrad/blob/master/docs/showcase/stable_diffusion_by_tinygrad.jpg?raw=true)

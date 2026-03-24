@@ -1,7 +1,7 @@
 from tinygrad import Tensor, dtypes, TinyJit
 from tinygrad.helpers import fetch
 from tinygrad.nn.state import safe_load, load_state_dict, get_state_dict
-from examples.stable_diffusion import AutoencoderKL, get_alphas_cumprod
+from examples.stable_diffusion import AutoencoderKL, get_alphas_cumprod, realize_grouped_by_shape
 from examples.sdxl import DPMPP2MSampler, append_dims, LegacyDDPMDiscretization
 from extra.models.unet import UNetModel
 from extra.models.clip import FrozenOpenClipEmbedder
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         if k.startswith("model"):
           v.replace(v.cast(dtypes.float16))
 
-    Tensor.realize(*get_state_dict(model).values())
+    realize_grouped_by_shape(*get_state_dict(model).values())
 
   c  = { "crossattn": model.cond_stage_model(args.prompt) }
   uc = { "crossattn": model.cond_stage_model("") }
